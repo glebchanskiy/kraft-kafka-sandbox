@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-producer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: test-producer
+  template:
+    metadata:
+      labels:
+        app: test-producer
+    spec:
+      containers:
+      - name: test-producer
+        image: glebchansky/test-message-producer:latest
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: "1000m"
+        env:
+          - name: APP_MODE
+            value: producer
+          - name: CONSUMER_GROUP
+            value: kek
+          - name: TOPIC_NAME
+            value: messages
+          - name: TOPIC_PARTITIONS
+            value: "3"
+          - name: TOPIC_REPLICAS
+            value: "3"
+          - name: SPRING_KAFKA_BOOTSTRAP-SERVERS
+            value: kafka-0.kafka-headless.kafka.svc.cluster.local:9092,kafka-1.kafka-headless.kafka.svc.cluster.local:9092,kafka-2.kafka-headless.kafka.svc.cluster.local:9092
+          - name: CONSUME_RATE
+            value: "500"
+

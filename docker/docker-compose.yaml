@@ -1,0 +1,90 @@
+services:
+  broker-1:
+    image: confluentinc/cp-kafka:7.5.0
+    hostname: broker-1
+    container_name: broker-1
+    ports:
+      - 9092:9092
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: CONTROLLER://broker-1:9000,PLAINTEXT://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker-1:9092
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@broker-1:9000,2@broker-2:9000
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LOG_DIRS: /tmp/kraft-combined-logs
+      CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+
+  broker-2:
+    image: confluentinc/cp-kafka:7.5.0
+    hostname: broker-2
+    container_name: broker-2
+    depends_on:
+      - broker-1
+    ports:
+      - 9093:9092
+    environment:
+      KAFKA_NODE_ID: 2
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: CONTROLLER://broker-2:9000,PLAINTEXT://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker-2:9092
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@broker-1:9000,2@broker-2:9000
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LOG_DIRS: /tmp/kraft-combined-logs
+      CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+      
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      
+  producer-1:
+    # build iamge in /twofold_strange/build.sh
+    image: twofold-strange:latest
+    container_name: producer-1
+    depends_on:
+      - broker-1
+      - broker-2
+    environment:
+      - APP_MODE=producer
+      - CONSUMER_GROUP=kek
+      - TOPIC_NAME=messages
+      - TOPIC_PARTITIONS=2
+      - TOPIC_REPLICAS=2
+      - SPRING_KAFKA_BOOTSTRAP-SERVERS=broker-1:9092,broker-2:9093
+      - CONSUME_RATE=500
+
+  consumer-1:
+    image: twofold-strange:latest
+    container_name: consumer-1
+    depends_on:
+      - broker-1
+      - broker-2
+    environment:
+      - APP_MODE=consumer
+      - CONSUMER_GROUP=kek
+      - TOPIC_NAME=messages
+      - TOPIC_PARTITIONS=2
+      - TOPIC_REPLICAS=2
+      - SPRING_KAFKA_BOOTSTRAP-SERVERS=broker-1:9092,broker-2:9093
+      - CONSUME_CONCURRENCY=1
+      - CONSUME_RATE=1000
+
+  consumer-2:
+    image: twofold-strange:latest
+    container_name: consumer-2
+    depends_on:
+      - broker-1
+      - broker-2
+    environment:
+      - APP_MODE=consumer
+      - CONSUMER_GROUP=kek2
+      - TOPIC_NAME=messages
+      - TOPIC_PARTITIONS=2
+      - TOPIC_REPLICAS=2
+      - SPRING_KAFKA_BOOTSTRAP-SERVERS=broker-1:9092,broker-2:9093
+      - CONSUME_CONCURRENCY=1
+      - CONSUME_RATE=1000
